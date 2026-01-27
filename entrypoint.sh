@@ -44,6 +44,12 @@ case $CLOUD in
     PRIVATE_INTERFACE="private/${LOCAL_IP}"
     PUBLIC_INTERFACE="public/${LOCAL_IP}!${PUBLIC_IP}"
     ;;
+  exoscale)
+    LOCAL_IP=$(curl -s http://169.254.169.254/1.0/meta-data/local-ipv4)
+    PUBLIC_IP=$(curl -s http://169.254.169.254/1.0/meta-data/public-ipv4)
+    PRIVATE_INTERFACE="private/${LOCAL_IP}"
+    PUBLIC_INTERFACE="public/${LOCAL_IP}!${PUBLIC_IP}"
+    ;;
   *)
     ;;
 esac
