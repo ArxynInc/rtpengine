@@ -70,6 +70,9 @@ fi
 if [ -z "$LOGLEVEL" ]; then
   LOGLEVEL=5
 fi
+if [ -z "$HTTP_PORT" ]; then
+  HTTP_PORT=8080
+fi
 
 echo "LOGLEVEL is $LOGLEVEL"
 
@@ -79,7 +82,7 @@ if [ "$1" = 'rtpengine' ]; then
   --interface ${PRIVATE_INTERFACE} --interface ${PUBLIC_INTERFACE} \
   --port-min ${RTP_START_PORT} --port-max ${RTP_END_PORT} \
   --log-level ${LOGLEVEL} --port-min ${RTP_START_PORT} --port-max ${RTP_END_PORT} \
-  --listen-ng=22222 --listen-http=8080 --listen-udp=12222 \
+  --listen-ng=22222 --listen-http=${HTTP_PORT} --listen-udp=12222 \
   --dtmf-log-dest=127.0.0.1:22223 \
   --listen-cli=127.0.0.1:9900 \
   --pidfile /var/run/rtpengine.pid \
