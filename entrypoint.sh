@@ -75,11 +75,18 @@ echo "LOGLEVEL is $LOGLEVEL"
 
 if [ "$1" = 'rtpengine' ]; then
   shift
+
+  # use defaults for listen ports unless overridden via command-line args
+  EXTRA_ARGS=""
+  echo "$@" | grep -q -- '--listen-http' || EXTRA_ARGS="${EXTRA_ARGS} --listen-http=8080"
+  echo "$@" | grep -q -- '--listen-udp' || EXTRA_ARGS="${EXTRA_ARGS} --listen-udp=12222"
+  echo "$@" | grep -q -- '--listen-ng' || EXTRA_ARGS="${EXTRA_ARGS} --listen-ng=22222"
+
   exec rtpengine \
   --interface ${PRIVATE_INTERFACE} --interface ${PUBLIC_INTERFACE} \
   --port-min ${RTP_START_PORT} --port-max ${RTP_END_PORT} \
-  --log-level ${LOGLEVEL} --port-min ${RTP_START_PORT} --port-max ${RTP_END_PORT} \
-  --listen-ng=22222 --listen-http=8080 --listen-udp=12222 \
+  --log-level ${LOGLEVEL} \
+  ${EXTRA_ARGS} \
   --dtmf-log-dest=127.0.0.1:22223 \
   --listen-cli=127.0.0.1:9900 \
   --pidfile /var/run/rtpengine.pid \
