@@ -5,7 +5,7 @@ RUN apt-get update \
   && apt-get purge nftables \
   && apt-get -y --quiet --force-yes upgrade curl iproute2 \
   && apt-get install -y --no-install-recommends ca-certificates gcc g++ make cmake  build-essential git libavfilter-dev \
-  libevent-dev libpcap-dev libev-dev markdown  jq \
+  libevent-dev libpcap-dev libev-dev markdown pandoc jq \
   libjson-glib-dev default-libmysqlclient-dev libhiredis-dev libssl-dev \
   libcurl4-openssl-dev libavcodec-extra gperf libspandsp-dev \
   libxtables-dev libip6tc-dev libip4tc-dev  libiptc-dev \
