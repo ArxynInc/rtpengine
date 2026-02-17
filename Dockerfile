@@ -5,11 +5,11 @@ RUN apt-get update \
   && apt-get purge nftables \
   && apt-get -y --quiet --force-yes upgrade curl iproute2 \
   && apt-get install -y --no-install-recommends ca-certificates gcc g++ make cmake  build-essential git libavfilter-dev \
-  libevent-dev libpcap-dev libxmlrpc-core-c3-dev markdown  jq \
+  libevent-dev libpcap-dev libev-dev markdown pandoc jq \
   libjson-glib-dev default-libmysqlclient-dev libhiredis-dev libssl-dev \
   libcurl4-openssl-dev libavcodec-extra gperf libspandsp-dev \
   libxtables-dev libip6tc-dev libip4tc-dev  libiptc-dev \
-  libjpeg-dev libsqlite3-dev libpcre3-dev libldns-dev libmnl-dev libnftnl-dev pandoc \
+  libjpeg-dev libsqlite3-dev libpcre3-dev libldns-dev libmnl-dev libnftnl-dev \
   libspeex-dev libspeexdsp-dev libedit-dev libtiff-dev yasm libswscale-dev haveged \
   libopus-dev libopusfile-dev libsndfile-dev libshout3-dev libmpg123-dev libmp3lame-dev \
   && cd /usr/local/src \
@@ -20,8 +20,9 @@ RUN apt-get update \
   && cd /usr/local/src \
   && git clone https://github.com/warmcat/libwebsockets.git -b v4.3.3 \
   && cd /usr/local/src/libwebsockets \
-  && mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=RelWithDebInfo && make -j ${BUILD_CPUS} && make install \
-  && git clone https://github.com/sipwise/rtpengine.git -b mr11.5.1.31 \
+  && sed -i 's/return LWS_HPI_RET_PLEASE_CLOSE_ME;/return LWS_HPI_RET_HANDLED;/' lib/roles/ws/ops-ws.c \
+  && mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLWS_WITH_NETLINK=OFF -DLWS_WITH_LIBEV=1 && make -j ${BUILD_CPUS} && make install \
+  && git clone https://github.com/sipwise/rtpengine.git -b mr12.5.1.48 \
   && cd rtpengine/daemon \
   && make -j ${BUILD_CPUS} with_transcoding=yes \
   && find . -name rtpengine \
