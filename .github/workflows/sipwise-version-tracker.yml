@@ -112,7 +112,7 @@ jobs:
             - For a major-version bump (mr12 → mr13), validate in dev
               voip namespace before merging
             - For patch-level bumps inside the same mr (mr13.5.1.15 →
-              mr13.5.1.16), usually safe to merge directly
+              mr12.5.1.54), usually safe to merge directly
           labels: |
             dependencies
             rtpengine-upstream

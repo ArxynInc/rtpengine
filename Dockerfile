@@ -21,7 +21,7 @@ FROM debian:bookworm-slim
 # .github/workflows/sipwise-version-tracker.yml when a new upstream
 # release lands. mr13.5.x is the current stable LTS line (mr26 is the
 # dev/master line — riskier for prod, kept on stable).
-ARG RTPENGINE_VERSION=mr13.5.1.16
+ARG RTPENGINE_VERSION=mr12.5.1.54
 
 LABEL org.opencontainers.image.title="rtpengine" \
       org.opencontainers.image.description="sipwise/rtpengine packaged multi-arch (amd64 + arm64)" \
