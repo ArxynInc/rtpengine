@@ -38,12 +38,12 @@ LABEL org.opencontainers.image.title="rtpengine" \
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates curl iproute2 iptables \
-    gcc g++ make pkg-config build-essential git gperf \
+    gcc g++ make pkg-config build-essential git gperf zlib1g-dev \
     libavcodec-dev libavfilter-dev libavformat-dev libavutil-dev libswresample-dev \
     libavcodec-extra libevent-dev libpcap0.8-dev libxmlrpc-core-c3-dev \
     libjson-glib-dev default-libmysqlclient-dev libhiredis-dev libssl-dev \
-    libcurl4-openssl-dev libspandsp-dev libwebsockets-dev \
-    libiptc-dev libpcre2-dev libsystemd-dev \
+    libcurl4-openssl-dev libspandsp-dev libwebsockets-dev libcjson-dev \
+    libiptc-dev libxtables-dev libmnl-dev libnftnl-dev libpcre2-dev libsystemd-dev \
     libmosquitto-dev libopus-dev libncurses-dev libjwt-dev \
     liburing-dev libglib2.0-dev libbcg729-dev \
   && cd /usr/local/src \
