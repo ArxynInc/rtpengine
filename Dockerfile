@@ -53,8 +53,13 @@ RUN apt-get update \
   && git clone --depth 1 --branch "${RTPENGINE_VERSION}" https://github.com/sipwise/rtpengine.git \
   && cd rtpengine/daemon \
   && make \
-  && cp /usr/local/src/rtpengine/daemon/rtpengine /usr/local/bin/rtpengine \
-  && /usr/local/bin/rtpengine --version || true \
+  # Fail loudly if make didn't produce the daemon binary. Earlier
+  # versions of this Dockerfile wrapped the version-check in `|| true`
+  # which (due to operator precedence in /bin/sh) accidentally rescued
+  # a missing-binary failure and silently shipped a broken image.
+  && test -x /usr/local/src/rtpengine/daemon/rtpengine \
+  && install -m 0755 /usr/local/src/rtpengine/daemon/rtpengine /usr/local/bin/rtpengine \
+  && /usr/local/bin/rtpengine --version \
   && rm -rf /usr/local/src/rtpengine \
   && apt-get purge -y --auto-remove \
     gcc g++ make pkg-config build-essential git markdown discount gperf \
