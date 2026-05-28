@@ -39,18 +39,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get latest sipwise/rtpengine release
+      - name: Get latest sipwise/rtpengine release on our pinned track
         id: upstream
         run: |
+          # sipwise maintains four release tracks concurrently (mr11/12/13/26).
+          # The /releases/latest endpoint returns whatever was tagged most
+          # recently across ALL tracks — so it'd happily jump us from mr13
+          # (stable LTS) to mr26 (dev line). Instead, derive the track from
+          # our current pin and only consider tags on that track.
+          CURRENT_PIN=$(grep -E "^ARG RTPENGINE_VERSION=" Dockerfile | head -1 | sed 's|^ARG RTPENGINE_VERSION=||')
+          TRACK=$(echo "$CURRENT_PIN" | grep -oE '^mr[0-9]+')
+          if [ -z "$TRACK" ]; then
+            echo "Could not parse track from current pin '$CURRENT_PIN'" >&2
+            exit 1
+          fi
+          echo "Tracking sipwise/rtpengine on track: $TRACK"
+
+          # Page through releases and pick the newest tag matching $TRACK.x.y.z
           LATEST=$(curl -s -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/sipwise/rtpengine/releases/latest \
-            | jq -r .tag_name)
-          if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
-            echo "Failed to fetch upstream tag" >&2
+            "https://api.github.com/repos/sipwise/rtpengine/releases?per_page=50" \
+            | jq -r --arg track "$TRACK" '[.[] | select(.tag_name | startswith($track + ".")) | .tag_name] | first // empty')
+          if [ -z "$LATEST" ]; then
+            echo "No releases found on track $TRACK" >&2
             exit 1
           fi
           echo "tag=$LATEST" >> $GITHUB_OUTPUT
-          echo "Upstream latest: $LATEST"
+          echo "Latest on $TRACK: $LATEST"
 
       - name: Read current pin from Dockerfile
         id: current
