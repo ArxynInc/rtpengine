@@ -38,7 +38,7 @@ LABEL org.opencontainers.image.title="rtpengine" \
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates curl iproute2 iptables \
-    gcc g++ make pkg-config build-essential git gperf zlib1g-dev \
+    gcc g++ make pkg-config build-essential git gperf zlib1g-dev pandoc \
     libavcodec-dev libavfilter-dev libavformat-dev libavutil-dev libswresample-dev \
     libavcodec-extra libevent-dev libpcap0.8-dev libxmlrpc-core-c3-dev \
     libjson-glib-dev default-libmysqlclient-dev libhiredis-dev libssl-dev \
@@ -59,7 +59,7 @@ RUN apt-get update \
   && /usr/local/bin/rtpengine --version \
   && rm -rf /usr/local/src/rtpengine \
   && apt-get purge -y --auto-remove \
-    gcc g++ make pkg-config build-essential git markdown discount gperf \
+    gcc g++ make pkg-config build-essential git pandoc gperf \
   && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/*
 
 VOLUME ["/tmp"]
