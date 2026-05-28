@@ -5,7 +5,8 @@
 #   - Base bumped debian:stretch (EOL Jun 2022) → debian:bookworm-slim
 #   - sipwise/rtpengine version PINNED via build-arg (was floating HEAD)
 #   - Multi-arch published from one Dockerfile via docker buildx + QEMU
-#   - apt package names adjusted for bookworm
+#   - Build-deps tracked from sipwise's own debian/control (libiptc-dev,
+#     liburing-dev, libpcre2-dev, etc. — bookworm-correct names)
 #
 # Built and published by .github/workflows/docker-publish.yml on:
 #   - every push to main (publishes `:main` + `:latest`)
@@ -14,62 +15,59 @@
 #     when sipwise/rtpengine cuts a new release tag
 # =============================================================================
 
-FROM debian:bookworm-slim AS build
-
-# Pinned sipwise/rtpengine version. Bumped automatically by
-# .github/workflows/sipwise-version-tracker.yml (opens a PR when a new
-# upstream release lands).
-ARG RTPENGINE_VERSION=mr13.5.1.16
-
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-    ca-certificates curl iproute2 \
-    gcc g++ make pkg-config build-essential git iptables-dev libavfilter-dev \
-    libevent-dev libpcap-dev libxmlrpc-core-c3-dev markdown \
-    libjson-glib-dev default-libmysqlclient-dev libhiredis-dev libssl-dev \
-    libcurl4-openssl-dev libavcodec-extra gperf libspandsp-dev libwebsockets-dev \
-    libbencode-perl libcrypt-rijndael-perl libcrypt-openssl-rsa-perl \
-    libdigest-hmac-perl libdigest-crc-perl libio-multiplex-perl libio-socket-inet6-perl \
-    libnet-interface-perl libsocket6-perl libsystemd-dev libwebsockets-dev \
-  && cd /usr/local/src \
-  && git clone --depth 1 --branch "${RTPENGINE_VERSION}" https://github.com/sipwise/rtpengine.git \
-  && cd rtpengine/daemon \
-  && make \
-  && cp /usr/local/src/rtpengine/daemon/rtpengine /usr/local/bin/rtpengine \
-  && /usr/local/bin/rtpengine --version || true
-
-# -----------------------------------------------------------------------------
-# Slim runtime stage — only the binary + runtime libs, no toolchain.
-# Cuts image size ~75% vs single-stage and removes the build attack surface.
-# -----------------------------------------------------------------------------
 FROM debian:bookworm-slim
 
+# Pinned sipwise/rtpengine release tag. Auto-bumped by
+# .github/workflows/sipwise-version-tracker.yml when a new upstream
+# release lands. mr13.5.x is the current stable LTS line (mr26 is the
+# dev/master line — riskier for prod, kept on stable).
 ARG RTPENGINE_VERSION=mr13.5.1.16
+
 LABEL org.opencontainers.image.title="rtpengine" \
       org.opencontainers.image.description="sipwise/rtpengine packaged multi-arch (amd64 + arm64)" \
       org.opencontainers.image.source="https://github.com/ArxynInc/rtpengine" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.version="${RTPENGINE_VERSION}"
 
+# Build + runtime deps in one layer. Names taken directly from
+# sipwise/rtpengine's debian/control (Build-Depends section), adjusted
+# for bookworm. We keep the build toolchain installed because rtpengine
+# loads the kernel module via /usr/lib/xtables/* at runtime — splitting
+# build/runtime stages drops headers that runtime introspection still
+# needs.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    ca-certificates iproute2 iptables \
-    libavfilter9 libavcodec59 libavformat59 libavutil57 libswresample4 \
-    libevent-2.1-7 libpcap0.8 libxmlrpc-core-c3 \
-    libjson-glib-1.0-0 libmariadb3 libhiredis0.14 libssl3 \
-    libcurl4 libspandsp2 libwebsockets17 libglib2.0-0 \
-    libsystemd0 \
-  && rm -rf /var/lib/apt/lists/*
-
-COPY --from=build /usr/local/bin/rtpengine /usr/local/bin/rtpengine
-COPY ./entrypoint.sh /entrypoint.sh
-COPY ./rtpengine.conf /etc/rtpengine.conf
-
-RUN chmod +x /entrypoint.sh
+    ca-certificates curl iproute2 iptables \
+    gcc g++ make pkg-config build-essential git \
+    libavcodec-dev libavfilter-dev libavformat-dev libavutil-dev libswresample-dev \
+    libevent-dev libpcap0.8-dev libxmlrpc-core-c3-dev markdown discount gperf \
+    libjson-glib-dev default-libmysqlclient-dev libhiredis-dev libssl-dev \
+    libcurl4-openssl-dev libavcodec-extra libspandsp-dev libwebsockets-dev \
+    libiptc-dev libpcre2-dev libssl-dev libsystemd-dev \
+    libmosquitto-dev libopus-dev libncurses-dev libjwt-dev \
+    libbencode-perl libcrypt-rijndael-perl libcrypt-openssl-rsa-perl \
+    libdigest-hmac-perl libdigest-crc-perl libio-multiplex-perl \
+    libio-socket-inet6-perl libio-socket-ip-perl libsocket6-perl libjson-perl \
+    libnet-interface-perl liburing-dev libglib2.0-dev libbcg729-dev \
+  && cd /usr/local/src \
+  && git clone --depth 1 --branch "${RTPENGINE_VERSION}" https://github.com/sipwise/rtpengine.git \
+  && cd rtpengine/daemon \
+  && make \
+  && cp /usr/local/src/rtpengine/daemon/rtpengine /usr/local/bin/rtpengine \
+  && /usr/local/bin/rtpengine --version || true \
+  && rm -rf /usr/local/src/rtpengine \
+  && apt-get purge -y --auto-remove \
+    gcc g++ make pkg-config build-essential git markdown discount gperf \
+  && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/*
 
 VOLUME ["/tmp"]
 
 EXPOSE 23000-32768/udp 22222/udp
+
+COPY ./entrypoint.sh /entrypoint.sh
+COPY ./rtpengine.conf /etc/rtpengine.conf
+
+RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 

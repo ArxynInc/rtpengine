@@ -45,7 +45,7 @@ pin so a regression upstream doesn't silently land in prod.
 | Architectures | amd64 only | **amd64 + arm64** |
 | Base image | `debian:stretch` (EOL Jun 2022) | `debian:bookworm-slim` |
 | sipwise version | floating HEAD | pinned via `RTPENGINE_VERSION` ARG |
-| Build stages | single | **multi-stage** (build + slim runtime) |
+| Build-deps source | hand-written list | tracked from sipwise `debian/control` |
 | OCI provenance/SBOM | no | yes (via `docker/build-push-action@v6`) |
 | Upstream tracking | none | daily cron auto-bumps via PR |
 
