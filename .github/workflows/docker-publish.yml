@@ -93,8 +93,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=rtpengine-multiarch
-          cache-to: type=gha,scope=rtpengine-multiarch,mode=max
+          cache-from: type=gha,scope=rtpengine-multiarch-v2
+          cache-to: type=gha,scope=rtpengine-multiarch-v2,mode=max
           build-args: |
             ${{ github.event.inputs.rtpengine_version && format('RTPENGINE_VERSION={0}', github.event.inputs.rtpengine_version) || '' }}
           # OCI provenance + SBOM (cosign tree / gh attestation can inspect)

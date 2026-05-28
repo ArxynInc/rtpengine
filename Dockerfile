@@ -38,17 +38,14 @@ LABEL org.opencontainers.image.title="rtpengine" \
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates curl iproute2 iptables \
-    gcc g++ make pkg-config build-essential git \
+    gcc g++ make pkg-config build-essential git gperf \
     libavcodec-dev libavfilter-dev libavformat-dev libavutil-dev libswresample-dev \
-    libevent-dev libpcap0.8-dev libxmlrpc-core-c3-dev markdown discount gperf \
+    libavcodec-extra libevent-dev libpcap0.8-dev libxmlrpc-core-c3-dev \
     libjson-glib-dev default-libmysqlclient-dev libhiredis-dev libssl-dev \
-    libcurl4-openssl-dev libavcodec-extra libspandsp-dev libwebsockets-dev \
-    libiptc-dev libpcre2-dev libssl-dev libsystemd-dev \
+    libcurl4-openssl-dev libspandsp-dev libwebsockets-dev \
+    libiptc-dev libpcre2-dev libsystemd-dev \
     libmosquitto-dev libopus-dev libncurses-dev libjwt-dev \
-    libbencode-perl libcrypt-rijndael-perl libcrypt-openssl-rsa-perl \
-    libdigest-hmac-perl libdigest-crc-perl libio-multiplex-perl \
-    libio-socket-inet6-perl libio-socket-ip-perl libsocket6-perl libjson-perl \
-    libnet-interface-perl liburing-dev libglib2.0-dev libbcg729-dev \
+    liburing-dev libglib2.0-dev libbcg729-dev \
   && cd /usr/local/src \
   && git clone --depth 1 --branch "${RTPENGINE_VERSION}" https://github.com/sipwise/rtpengine.git \
   && cd rtpengine/daemon \
