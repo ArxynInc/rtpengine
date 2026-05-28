@@ -1,0 +1,104 @@
+# =============================================================================
+# Track sipwise/rtpengine upstream releases — auto-bump our Dockerfile pin
+# =============================================================================
+# Runs daily. Compares the latest sipwise/rtpengine release tag against
+# the RTPENGINE_VERSION pinned in our Dockerfile. If a new upstream
+# release exists, opens a PR bumping the pin (and updates the
+# Dockerfile's two ARG lines + the OCI version label).
+#
+# Merging that PR triggers docker-publish.yml which rebuilds + publishes
+# multi-arch :<new-version> + :latest to GHCR.
+#
+# Why this workflow exists: drachtio/docker-rtpengine clones HEAD of
+# sipwise/rtpengine at build time — unpinned, irreproducible, no way
+# to roll back a regression. Pinning + tracker is the safer pattern
+# and gives a human review gate before prod gets the new binary.
+# =============================================================================
+name: Track sipwise/rtpengine releases
+
+on:
+  schedule:
+    # Daily at 06:00 UTC. sipwise typically cuts releases on weekdays in
+    # CEST; 06:00 UTC = 08:00 CEST so we catch new tags within a day.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sipwise-version-tracker
+  cancel-in-progress: false
+
+jobs:
+  check-and-bump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get latest sipwise/rtpengine release
+        id: upstream
+        run: |
+          LATEST=$(curl -s -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/sipwise/rtpengine/releases/latest \
+            | jq -r .tag_name)
+          if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
+            echo "Failed to fetch upstream tag" >&2
+            exit 1
+          fi
+          echo "tag=$LATEST" >> $GITHUB_OUTPUT
+          echo "Upstream latest: $LATEST"
+
+      - name: Read current pin from Dockerfile
+        id: current
+        run: |
+          PIN=$(grep -E "^ARG RTPENGINE_VERSION=" Dockerfile | head -1 | sed 's|^ARG RTPENGINE_VERSION=||')
+          echo "pin=$PIN" >> $GITHUB_OUTPUT
+          echo "Current pin: $PIN"
+
+      - name: Bail if pin already matches upstream
+        if: steps.upstream.outputs.tag == steps.current.outputs.pin
+        run: |
+          echo "Dockerfile already pinned to ${{ steps.upstream.outputs.tag }} — nothing to do."
+          echo "skip=true" >> $GITHUB_ENV
+
+      - name: Bump Dockerfile RTPENGINE_VERSION
+        if: env.skip != 'true'
+        run: |
+          # Both ARG lines (build + runtime stages) and the OCI version label.
+          sed -i "s|^ARG RTPENGINE_VERSION=.*|ARG RTPENGINE_VERSION=${{ steps.upstream.outputs.tag }}|g" Dockerfile
+
+      - name: Open PR with the bump
+        if: env.skip != 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(rtpengine): bump ${{ steps.current.outputs.pin }} → ${{ steps.upstream.outputs.tag }}"
+          branch: "chore/bump-rtpengine-${{ steps.upstream.outputs.tag }}"
+          delete-branch: true
+          title: "chore: bump sipwise/rtpengine ${{ steps.current.outputs.pin }} → ${{ steps.upstream.outputs.tag }}"
+          body: |
+            Automated upstream-release tracker.
+
+            New `sipwise/rtpengine` release detected:
+              - Previous pin: `${{ steps.current.outputs.pin }}`
+              - New release:  `${{ steps.upstream.outputs.tag }}`
+              - https://github.com/sipwise/rtpengine/releases/tag/${{ steps.upstream.outputs.tag }}
+
+            Merging this PR rebuilds + publishes multi-arch
+            `ghcr.io/arxyninc/rtpengine:${{ steps.upstream.outputs.tag }}` +
+            `:latest` via docker-publish.yml.
+
+            **Review checklist:**
+            - Skim the upstream release notes for breaking changes
+              (config format, command-line flags, kernel modules)
+            - For a major-version bump (mr12 → mr13), validate in dev
+              voip namespace before merging
+            - For patch-level bumps inside the same mr (mr13.5.1.15 →
+              mr13.5.1.16), usually safe to merge directly
+          labels: |
+            dependencies
+            rtpengine-upstream
